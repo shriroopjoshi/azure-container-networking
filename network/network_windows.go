@@ -63,10 +63,20 @@ func (nm *networkManager) newNetworkImplHnsV1(nwInfo *NetworkInfo, extIf *extern
 	)
 
 	networkAdapterName := extIf.Name
+
+	// Pass adapter name here if it is not empty, this is cause if we don't tell HNS which adapter to use
+	// it will just pick one randomly, this is a problem for customers that have multiple adapters
+	if nwInfo.AdapterName != "" {
+		networkAdapterName = nwInfo.AdapterName
+	}
+
 	// FixMe: Find a better way to check if a nic that is selected is not part of a vSwitch
 	if strings.HasPrefix(networkAdapterName, vEthernetAdapterPrefix) {
 		networkAdapterName = ""
 	}
+
+	log.Printf("[net] Adapter name used with HNS is : %s", networkAdapterName)
+
 	// Initialize HNS network.
 	hnsNetwork := &hcsshim.HNSNetwork{
 		Name:               nwInfo.Id,
@@ -216,8 +226,19 @@ func (nm *networkManager) configureHcnNetwork(nwInfo *NetworkInfo, extIf *extern
 
 	// Set hcn network adaptor name policy
 	// FixMe: Find a better way to check if a nic that is selected is not part of a vSwitch
-	if !strings.HasPrefix(extIf.Name, vEthernetAdapterPrefix) {
-		netAdapterNamePolicy, err := policy.GetHcnNetAdapterPolicy(extIf.Name)
+	// Pass adapter name here if it is not empty, this is cause if we don't tell HNS which adapter to use
+	// it will just pick one randomly, this is a problem for customers that have multiple adapters
+	if nwInfo.AdapterName != "" || !strings.HasPrefix(extIf.Name, vEthernetAdapterPrefix) {
+		var adapterName string
+		if (nwInfo.AdapterName != "") {
+			adapterName = nwInfo.AdapterName
+		} else {
+			adapterName = extIf.Name
+		}
+
+		log.Printf("[net] Adapter name used with HNS is : %s", adapterName)
+
+		netAdapterNamePolicy, err := policy.GetHcnNetAdapterPolicy(adapterName)
 		if err != nil {
 			log.Printf("[net] Failed to serialize network adapter policy due to error: %v", err)
 			return nil, err
