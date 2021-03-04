@@ -71,7 +71,9 @@ func (nm *networkManager) newNetworkImplHnsV1(nwInfo *NetworkInfo, extIf *extern
 	}
 
 	// FixMe: Find a better way to check if a nic that is selected is not part of a vSwitch
+	// per hns team, the hns calls fails if passed a vSwitch interface
 	if strings.HasPrefix(networkAdapterName, vEthernetAdapterPrefix) {
+		log.Printf("[net] vSwitch detected, setting adapter name to empty")
 		networkAdapterName = ""
 	}
 
@@ -226,11 +228,12 @@ func (nm *networkManager) configureHcnNetwork(nwInfo *NetworkInfo, extIf *extern
 
 	// Set hcn network adaptor name policy
 	// FixMe: Find a better way to check if a nic that is selected is not part of a vSwitch
+	// per hns team, the hns calls fails if passed a vSwitch interface
 	// Pass adapter name here if it is not empty, this is cause if we don't tell HNS which adapter to use
 	// it will just pick one randomly, this is a problem for customers that have multiple adapters
 	if nwInfo.AdapterName != "" || !strings.HasPrefix(extIf.Name, vEthernetAdapterPrefix) {
 		var adapterName string
-		if (nwInfo.AdapterName != "") {
+		if nwInfo.AdapterName != "" {
 			adapterName = nwInfo.AdapterName
 		} else {
 			adapterName = extIf.Name
