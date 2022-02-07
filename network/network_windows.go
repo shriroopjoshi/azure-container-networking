@@ -304,6 +304,8 @@ func (nm *networkManager) configureHcnNetwork(nwInfo *NetworkInfo, extIf *extern
 
 // newNetworkImplHnsV2 creates a new container network for HNSv2.
 func (nm *networkManager) newNetworkImplHnsV2(nwInfo *NetworkInfo, extIf *externalInterface) (*network, error) {
+	var hnsResponse *hcn.HostComputeNetwork
+
 	hcnNetwork, err := nm.configureHcnNetwork(nwInfo, extIf)
 	if err != nil {
 		log.Printf("[net] Failed to configure hcn network due to error: %v", err)
@@ -316,14 +318,14 @@ func (nm *networkManager) newNetworkImplHnsV2(nwInfo *NetworkInfo, extIf *extern
 		if _, ok := err.(hcn.NetworkNotFoundError); ok {
 			// Create the HNS network.
 			log.Printf("[net] Creating hcn network: %+v", hcnNetwork)
-			hnsResponse, err := hcnNetwork.Create()
+			hnsResponse, err = hcnNetwork.Create()
 			if err != nil {
-				return nil, fmt.Errorf("Failed to create hcn network: %s due to error: %v", hcnNetwork.Name, err)
+				return nil, fmt.Errorf("failed to create hcn network: %s due to error: %v", hcnNetwork.Name, err)
 			}
 
 			log.Printf("[net] Successfully created hcn network with response: %+v", hnsResponse)
 		} else {
-			return nil, fmt.Errorf("Failed to get hcn network: %s due to error: %v", hcnNetwork.Name, err)
+			return nil, fmt.Errorf("failed to get hcn network: %s due to error: %v", hcnNetwork.Name, err)
 		}
 	}
 
