@@ -310,14 +310,22 @@ func (nm *networkManager) newNetworkImplHnsV2(nwInfo *NetworkInfo, extIf *extern
 		return nil, err
 	}
 
-	// Create the HNS network.
-	log.Printf("[net] Creating hcn network: %+v", hcnNetwork)
-	hnsResponse, err := hnsv2.CreateNetwork(hcnNetwork)
+	// Check if the network exists before creating it
+	_, err = hcn.GetNetworkByName(hcnNetwork.Name)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create hcn network: %s due to error: %v", hcnNetwork.Name, err)
-	}
+		if _, ok := err.(hcn.NetworkNotFoundError); ok {
+			// Create the HNS network.
+			log.Printf("[net] Creating hcn network: %+v", hcnNetwork)
+			hnsResponse, err := hcnNetwork.Create()
+			if err != nil {
+				return nil, fmt.Errorf("Failed to create hcn network: %s due to error: %v", hcnNetwork.Name, err)
+			}
 
-	log.Printf("[net] Successfully created hcn network with response: %+v", hnsResponse)
+			log.Printf("[net] Successfully created hcn network with response: %+v", hnsResponse)
+		} else {
+			return nil, fmt.Errorf("Failed to get hcn network: %s due to error: %v", hcnNetwork.Name, err)
+		}
+	}
 
 	var vlanid int
 	opt, _ := nwInfo.Options[genericData].(map[string]interface{})
